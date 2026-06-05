@@ -41,7 +41,7 @@ async function parseWithGroq(content: string, companyName: string) {
       messages: [
         {
           role: 'system',
-          content: 'You are a company data extractor. Extract structured company information from the provided text. Respond only with valid JSON, no markdown.'
+          content: 'You are a company data extractor. Extract structured company information from the provided text. Respond only with valid JSON, no markdown, no backticks.'
         },
         {
           role: 'user',
@@ -54,7 +54,8 @@ async function parseWithGroq(content: string, companyName: string) {
   console.log('GROQ RESPONSE:', JSON.stringify(data).slice(0, 500))
   const text = data.choices?.[0]?.message?.content || '{}'
   try {
-    return JSON.parse(text)
+    const clean = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    return JSON.parse(clean)
   } catch {
     return {}
   }
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
     console.log('RESULTS COUNT:', results.length)
     const saved = []
 
-    for (const result of results.slice(0, 3)) {
+    for (const result of results.slice(0, 2)) {
       try {
         console.log('PROCESSING:', result.url)
         const content = await readWebsite(result.url)
