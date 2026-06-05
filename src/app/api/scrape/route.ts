@@ -12,6 +12,7 @@ async function searchCompanies(query: string) {
     }
   })
   const data = await response.json()
+  console.log('JINA SEARCH RESPONSE:', JSON.stringify(data).slice(0, 500))
   return data.data || []
 }
 
@@ -24,6 +25,7 @@ async function readWebsite(url: string) {
     }
   })
   const data = await response.json()
+  console.log('JINA READER RESPONSE:', JSON.stringify(data).slice(0, 300))
   return data.data?.content || ''
 }
 
@@ -49,6 +51,7 @@ async function parseWithGroq(content: string, companyName: string) {
     })
   })
   const data = await response.json()
+  console.log('GROQ RESPONSE:', JSON.stringify(data).slice(0, 500))
   const text = data.choices?.[0]?.message?.content || '{}'
   try {
     return JSON.parse(text)
@@ -63,13 +66,18 @@ export async function POST(req: NextRequest) {
     const { query } = await req.json()
     if (!query) return NextResponse.json({ error: 'Query required' }, { status: 400 })
 
+    console.log('SCRAPE QUERY:', query)
     const results = await searchCompanies(query)
+    console.log('RESULTS COUNT:', results.length)
     const saved = []
 
     for (const result of results.slice(0, 3)) {
       try {
+        console.log('PROCESSING:', result.url)
         const content = await readWebsite(result.url)
+        console.log('CONTENT LENGTH:', content.length)
         const parsed = await parseWithGroq(content, result.title || query)
+        console.log('PARSED:', JSON.stringify(parsed))
 
         if (!parsed.company_name) continue
 
@@ -102,6 +110,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, saved })
   } catch (error) {
+    console.error('SCRAPE ERROR:', error)
     return NextResponse.json({ error: 'Scrape failed' }, { status: 500 })
   }
 }
