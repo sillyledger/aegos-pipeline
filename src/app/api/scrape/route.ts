@@ -3,6 +3,14 @@ export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
 
+function extractDomain(url: string) {
+  try {
+    return new URL(url).hostname.replace('www.', '')
+  } catch {
+    return url
+  }
+}
+
 async function searchCompanies(query: string) {
   const response = await fetch(`https://s.jina.ai/?q=${encodeURIComponent(query)}`, {
     headers: {
@@ -71,9 +79,29 @@ export async function POST(req: NextRequest) {
     const results = await searchCompanies(query)
     console.log('RESULTS COUNT:', results.length)
     const saved = []
+    const seenDomains = new Set<string>()
 
-    for (const result of results.slice(0, 2)) {
+    for (const result of results.slice(0, 5)) {
       try {
+        const domain = extractDomain(result.url)
+
+        if (seenDomains.has(domain)) {
+          console.log('SKIPPING DUPLICATE DOMAIN:', domain)
+          continue
+        }
+        seenDomains.add(domain)
+
+        const existing = await sql`
+          SELECT id FROM staged_companies 
+          WHERE website ILIKE ${'%' + domain + '%'}
+          AND status != 'rejected'
+          LIMIT 1
+        `
+        if (existing.length > 0) {
+          console.log('ALREADY EXISTS:', domain)
+          continue
+        }
+
         console.log('PROCESSING:', result.url)
         const content = await readWebsite(result.url)
         console.log('CONTENT LENGTH:', content.length)
@@ -101,7 +129,6 @@ export async function POST(req: NextRequest) {
             'medium',
             ${content.slice(0, 5000)}
           )
-          ON CONFLICT DO NOTHING
         `
         saved.push(parsed.company_name)
       } catch (e) {
