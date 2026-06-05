@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
 
-const sql = neon(process.env.DATABASE_URL!)
-
 async function searchCompanies(query: string) {
   const response = await fetch(`https://s.jina.ai/?q=${encodeURIComponent(query)}`, {
     headers: {
@@ -59,6 +57,7 @@ async function parseWithGroq(content: string, companyName: string) {
 
 export async function POST(req: NextRequest) {
   try {
+    const sql = neon(process.env.DATABASE_URL!)
     const { query } = await req.json()
     if (!query) return NextResponse.json({ error: 'Query required' }, { status: 400 })
 
