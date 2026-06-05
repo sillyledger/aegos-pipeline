@@ -41,7 +41,7 @@ async function parseWithGroq(content: string, companyName: string) {
       messages: [
         {
           role: 'system',
-          content: 'You are a company data extractor. Extract structured company information from the provided text. Respond only with valid JSON, no markdown, no backticks.'
+          content: 'You are a company data extractor. Extract structured company information from the provided text. Respond only with valid JSON, no markdown, no backticks. For the sector field, use short standardized names like: FinTech, HealthTech, EdTech, SaaS, E-Commerce, Logistics, CleanTech, PropTech, InsurTech, Cybersecurity, AI, Biotech, Media, Retail, Manufacturing, Telecoms, Energy, Agriculture, Real Estate, Financial Services.'
         },
         {
           role: 'user',
